@@ -50,7 +50,7 @@ class Venue(db.Model):
     genres = db.Column(db.ARRAY(db.String))
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
-
+    
     def _create_individual_venue_dict(self):
 
       """
@@ -87,6 +87,7 @@ class Artist(db.Model):
       temp_dict['name'] = self.name
       return temp_dict
 
+
 class Show(db.Model):
   __tablename__ = 'Shows' 
 
@@ -94,7 +95,6 @@ class Show(db.Model):
   venue_id =  db.Column(db.Integer, db.ForeignKey('Venues.id'), primary_key=True)
   artist_id = db.Column(db.Integer, db.ForeignKey('Artists.id'), primary_key=True)
   show_time = db.Column(db.DateTime, primary_key=True)
-
   
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
