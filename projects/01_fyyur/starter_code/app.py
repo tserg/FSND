@@ -51,6 +51,17 @@ class Venue(db.Model):
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
+    def _create_individual_venue_dict(self):
+
+      """
+        Helper function for venues()
+      """
+      temp_dict = {}
+      temp_dict['id'] = self.id
+      temp_dict['name'] = self.name
+      temp_dict['num_upcoming_shows'] = 0
+      return temp_dict
+
 class Artist(db.Model):
     __tablename__ = 'Artists'
 
@@ -65,6 +76,16 @@ class Artist(db.Model):
     seeking_venue = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.String(500))
     genres = db.Column(db.ARRAY(db.String))
+
+    def _create_individual_artist_dict(self):
+
+      """
+        Helper function for artists()
+      """
+      temp_dict = {}
+      temp_dict['id'] = self.id
+      temp_dict['name'] = self.name
+      return temp_dict
 
 class Show(db.Model):
   __tablename__ = 'Shows' 
@@ -109,27 +130,29 @@ def index():
 def venues():
   # TODO: replace with real venues data.
   #       num_shows should be aggregated based on number of upcoming shows per venue.
-  data=[{
-    "city": "San Francisco",
-    "state": "CA",
-    "venues": [{
-      "id": 1,
-      "name": "The Musical Hop",
-      "num_upcoming_shows": 0,
-    }, {
-      "id": 3,
-      "name": "Park Square Live Music & Coffee",
-      "num_upcoming_shows": 1,
-    }]
-  }, {
-    "city": "New York",
-    "state": "NY",
-    "venues": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }]
+  
+  data = []
+
+  areas = Venue.query.distinct('city', 'state').all()
+
+  for area in areas: 
+
+    venues = Venue.query.filter(Venue.city == area.city,
+      Venue.state == area.state).all()
+
+    venue_dict = []
+
+    for venue in venues:
+      venue_dict.append(venue._create_individual_venue_dict())
+
+    temp = {
+      'city': area.city,
+      'state': area.state,
+      'venues': venue_dict
+    }
+
+    data.append(temp)
+
   return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])
@@ -312,16 +335,16 @@ def delete_venue(venue_id):
 @app.route('/artists')
 def artists():
   # TODO: replace with real data returned from querying the database
-  data=[{
-    "id": 4,
-    "name": "Guns N Petals",
-  }, {
-    "id": 5,
-    "name": "Matt Quevedo",
-  }, {
-    "id": 6,
-    "name": "The Wild Sax Band",
-  }]
+
+
+  data = []
+
+  all_artists = Artist.query.all()
+
+  for artist in all_artists: 
+
+    data.append(artist._create_individual_artist_dict())
+
   return render_template('pages/artists.html', artists=data)
 
 @app.route('/artists/search', methods=['POST'])
