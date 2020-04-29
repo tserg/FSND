@@ -10,9 +10,10 @@ from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
 from logging import Formatter, FileHandler
-from flask_wtf import Form
+from flask_wtf import Form, CsrfProtect
 from forms import *
 from flask_migrate import Migrate
+import datetime
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -21,6 +22,9 @@ app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
 
+csrf = CsrfProtect()
+
+csrf.init_app(app)
 
 db = SQLAlchemy(app)
 
@@ -45,9 +49,10 @@ class Venue(db.Model):
     website = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean, default=False)
+    seeking_talent = db.Column(db.Boolean(), default=False)
     seeking_description = db.Column(db.String(500))
-    genres = db.Column(db.ARRAY(db.String))
+    genres = db.Column(db.ARRAY(db.String), nullable=False)
+    shows = db.relationship('Show', backref='venue', lazy=True)
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
     
@@ -73,9 +78,10 @@ class Artist(db.Model):
     website = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
-    seeking_venue = db.Column(db.Boolean, default=False)
+    seeking_venue = db.Column(db.Boolean(), default=False)
     seeking_description = db.Column(db.String(500))
-    genres = db.Column(db.ARRAY(db.String))
+    genres = db.Column(db.ARRAY(db.String), nullable=False)
+    shows = db.relationship('Show', backref='artist', lazy=True)
 
     def _create_individual_artist_dict(self):
 
@@ -91,10 +97,9 @@ class Artist(db.Model):
 class Show(db.Model):
   __tablename__ = 'Shows' 
 
-  id = db.Column(db.Integer, primary_key=True)
   venue_id =  db.Column(db.Integer, db.ForeignKey('Venues.id'), primary_key=True)
   artist_id = db.Column(db.Integer, db.ForeignKey('Artists.id'), primary_key=True)
-  show_time = db.Column(db.DateTime, primary_key=True)
+  start_time = db.Column(db.DateTime(), primary_key=True)
   
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
@@ -284,11 +289,11 @@ def create_venue_submission():
 
     print(form.name.data)
 
+    print(type(form.seeking_talent.data))
     if form.seeking_talent.data is False:
       seeking_description = ''
     else:
       seeking_description = form.seeking_description
-
 
     new_venue = Venue(
       name = form.name.data,
@@ -301,10 +306,16 @@ def create_venue_submission():
       website = form.website.data,
       image_link = form.image_link.data,
       seeking_talent = form.seeking_talent.data,
-      seeking_description = seeking_description
+      seeking_description = form.seeking_description.data
       )
 
+    print("seeking_talent field added")
+    print(new_venue.seeking_talent, new_venue.name)
+
     db.session.add(new_venue)
+
+    print(new_venue.seeking_talent, new_venue.name)
+
     db.session.commit()
 
     flash('Venue ' + request.form['name'] + ' was successfully listed!')
@@ -313,6 +324,8 @@ def create_venue_submission():
 # TODO: on unsuccessful db insert, flash an error instead.
 # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
 # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+
+    db.session.rollback()
 
     flash('Venue ' + request.form['name'] + ' could not be listed!')
 
@@ -525,6 +538,7 @@ def create_artist_submission():
 
     print(form.name.data)
 
+
     if form.seeking_venue.data is False:
       seeking_description = ''
     else:
@@ -535,14 +549,13 @@ def create_artist_submission():
       name = form.name.data,
       city = form.city.data,
       state = form.state.data,
-
       phone = form.phone.data,
       genres = form.genres.data,
       facebook_link = form.facebook_link.data,
       website = form.website.data,
       image_link = form.image_link.data,
       seeking_venue = form.seeking_venue.data,
-      seeking_description = seeking_description
+      seeking_description = form.seeking_description.data
       )
 
     db.session.add(new_artist)
@@ -554,6 +567,7 @@ def create_artist_submission():
 # TODO: on unsuccessful db insert, flash an error instead.
 # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
 # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+    db.session.rollback()
 
     flash('Artist ' + request.form['name'] + ' could not be listed!')
 
@@ -621,12 +635,48 @@ def create_show_submission():
   # called to create new shows in the db, upon submitting new show listing form
   # TODO: insert form data as a new Show record in the db, instead
 
-  # on successful db insert, flash success
-  flash('Show was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Show could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+  form = ShowForm(request.form)
+
+  print("form loaded")
+
+  try:
+
+    if form.validate():
+      print("form validated")
+      # on successful db insert, flash success
+
+      print(type(form.venue_id.data), type(form.artist_id.data))
+
+      new_show = Show(
+        venue_id = form.venue_id.data,
+        artist_id = form.artist_id.data,
+        start_time = form.start_time.data
+      )
+
+      print(new_show.venue_id, new_show.artist_id, new_show.start_time)
+
+      db.session.add(new_show)
+
+      print("Added to session")
+      db.session.commit()
+      flash('Show was successfully listed!')
+
+  except Exception as e:
+# TODO: on unsuccessful db insert, flash an error instead.
+# e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
+# see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+    print(f'Error ==> {e}')
+    db.session.rollback()
+
+    flash('Show could not be listed!')
+
+  finally:
+    db.session.close()
+
+
   return render_template('pages/home.html')
+
+
 
 @app.errorhandler(404)
 def not_found_error(error):
