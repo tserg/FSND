@@ -255,14 +255,33 @@ def search_venues():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
-  response={
-    "count": 1,
-    "data": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }
+  
+  query = request.form.get('search_term')
+
+  print(query)
+
+  '''
+    https://knowledge.udacity.com/questions/83562
+  '''
+
+  results = Venue.query.filter(Venue.name.ilike('%{}%'.format(query))).all()
+
+  venue_list = []
+
+  for result in results:
+
+    temp_dict = {}
+    temp_dict['id'] = result.id
+    temp_dict['name'] = result.name
+    temp_dict['num_upcoming_shows'] = Show.query.filter_by(venue_id = result.id).filter(Show.start_time >= datetime.datetime.now()).all()
+
+    venue_list.append(temp_dict)
+
+  response = {
+    'count': len(results),
+    'data': venue_list
+  }  
+
   return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/venues/<int:venue_id>')
@@ -384,13 +403,31 @@ def search_artists():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
   # search for "band" should return "The Wild Sax Band".
-  response={
-    "count": 1,
-    "data": [{
-      "id": 4,
-      "name": "Guns N Petals",
-      "num_upcoming_shows": 0,
-    }]
+
+  query = request.form.get('search_term')
+
+  print(query)
+
+  '''
+    https://knowledge.udacity.com/questions/83562
+  '''
+
+  results = Artist.query.filter(Artist.name.ilike('%{}%'.format(query))).all()
+
+  artist_list = []
+
+  for result in results:
+
+    temp_dict = {}
+    temp_dict['id'] = result.id
+    temp_dict['name'] = result.name
+    temp_dict['num_upcoming_shows'] = Show.query.filter_by(artist_id = result.id).filter(Show.start_time >= datetime.datetime.now()).all()
+
+    artist_list.append(temp_dict)
+
+  response = {
+    'count': len(results),
+    'data': artist_list
   }
   return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
 
@@ -523,8 +560,6 @@ def edit_venue_submission(venue_id):
 
 # on successful db insert, flash success
     if form.validate():
-
-      print("form validated")
 
       if form.seeking_talent.data is False:
         seeking_description = ''
