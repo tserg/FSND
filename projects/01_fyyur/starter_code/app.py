@@ -54,6 +54,13 @@ class Venue(db.Model):
     genres = db.Column(db.ARRAY(db.String), nullable=False)
     shows = db.relationship('Show', backref='venue', lazy=True)
 
+    """
+      Constraint based on the assumption that there will not be two venues
+      with the same name and address
+    """
+
+    __table_args__ = (db.UniqueConstraint('name', 'city', 'state', 'address'), )
+
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
     
     def _create_individual_venue_dict(self):
@@ -107,6 +114,13 @@ class Artist(db.Model):
     genres = db.Column(db.ARRAY(db.String), nullable=False)
     shows = db.relationship('Show', backref='artist', lazy=True)
 
+    """
+      Constraint based on the assumption that there will not be two venues
+      with the same name, city and genres
+    """
+
+    __table_args__ = (db.UniqueConstraint('name', 'city', 'state', 'genres'), )
+
     def _create_individual_artist_dict(self):
 
       """
@@ -152,6 +166,14 @@ class Show(db.Model):
   venue_id =  db.Column(db.Integer, db.ForeignKey('Venues.id'), primary_key=True)
   artist_id = db.Column(db.Integer, db.ForeignKey('Artists.id'), primary_key=True)
   start_time = db.Column(db.DateTime(), primary_key=True)
+
+  """
+    Constraint on the assumption that an artist cannot be at more than one venue at one time but
+    a single venue may have multiple stages.
+
+  """
+
+  __table_args__ = (db.UniqueConstraint('artist_id', 'start_time', name='same_artist_start_time'), )
 
   def _create_individual_show_dict(self):
     """
@@ -212,7 +234,12 @@ app.jinja_env.filters['datetime'] = format_datetime
 
 @app.route('/')
 def index():
-  return render_template('pages/home.html')
+
+  latest_venue = Venue.query.order_by(Venue.id.desc()).limit(1).all()
+
+  data = latest_venue[0]._create_individual_venue_dict_2()
+
+  return render_template('pages/home.html', venue=data)
 
 
 #  Venues
@@ -370,16 +397,39 @@ def create_venue_submission():
   finally:
     db.session.close()
 
-  return render_template('pages/home.html')
 
-@app.route('/venues/<venue_id>', methods=['DELETE'])
+  # redirect is used instead of render_template due to the need 
+  # to send data using index()
+
+  return redirect(url_for('index'))
+
+@app.route('/venues/<venue_id>/delete', methods=['GET'])
 def delete_venue(venue_id):
   # TODO: Complete this endpoint for taking a venue_id, and using
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
 
   # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
   # clicking that button delete it from the db then redirect the user to the homepage
-  return None
+
+  try:
+    current_venue = Venue.query.get(venue_id)
+    db.session.delete(current_venue)
+    db.session.commit()
+
+    flash('Venue ' + str(venue_id) + ' was deleted!')
+
+  except:
+
+    db.session.rollback()
+
+    flash('Venue ' + str(venue_id) + ' could not be deleted!')
+
+  finally:
+
+    db.session.close()
+
+
+  return redirect(url_for('index'))
 
 #  Artists
 #  ----------------------------------------------------------------
@@ -649,8 +699,10 @@ def create_artist_submission():
   finally:
     db.session.close()
 
+  # redirect is used instead of render_template due to the need 
+  # to send data using index()
 
-  return render_template('pages/home.html')
+  return redirect(url_for('index'))
 
 
 #  Shows
@@ -714,7 +766,7 @@ def create_show_submission():
     db.session.close()
 
 
-  return render_template('pages/home.html')
+  return redirect(url_for('index'))
 
 
 
