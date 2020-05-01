@@ -8,6 +8,7 @@ import babel
 from flask import Flask, render_template, request, Response, flash, redirect, url_for
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
+
 import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form, CsrfProtect
@@ -52,8 +53,7 @@ class Venue(db.Model):
     seeking_talent = db.Column(db.Boolean(), default=False)
     seeking_description = db.Column(db.String(500))
     genres = db.Column(db.ARRAY(db.String), nullable=False)
-    shows = db.relationship('Show', backref='venue', lazy=True)
-
+    shows = db.relationship('Show', backref='venue', cascade="all, delete", lazy=True)
     """
       Constraint based on the assumption that there will not be two venues
       with the same name and address
@@ -112,7 +112,7 @@ class Artist(db.Model):
     seeking_venue = db.Column(db.Boolean(), default=False)
     seeking_description = db.Column(db.String(500))
     genres = db.Column(db.ARRAY(db.String), nullable=False)
-    shows = db.relationship('Show', backref='artist', lazy=True)
+    shows = db.relationship('Show', backref='artist', cascade ='all, delete', lazy=True)
 
     """
       Constraint based on the assumption that there will not be two venues
@@ -200,6 +200,10 @@ class Show(db.Model):
     """
 
     temp_dict = {
+      'venue_id': self.venue_id,
+      'venue_name': self.venue.name,
+      'venue_image_link': self.venue.image_link,
+
       'artist_id': self.artist_id,
       'artist_name': self.artist.name,
       'artist_image_link': self.artist.image_link,
@@ -235,9 +239,20 @@ app.jinja_env.filters['datetime'] = format_datetime
 @app.route('/')
 def index():
 
-  latest_venue = Venue.query.order_by(Venue.id.desc()).limit(1).all()
+  try:
 
-  data = latest_venue[0]._create_individual_venue_dict_2()
+    latest_venue = Venue.query.order_by(Venue.id.desc()).limit(1).all()
+
+    data = latest_venue[0]._create_individual_venue_dict_2()
+
+    
+
+  except:
+
+    data = {
+      'id': 0,
+      'name': ''
+    }
 
   return render_template('pages/home.html', venue=data)
 
@@ -363,7 +378,7 @@ def create_venue_submission():
       if form.seeking_talent.data is False:
         seeking_description = ''
       else:
-        seeking_description = form.seeking_description
+        seeking_description = form.seeking_description.data
 
       new_venue = Venue(
         name = form.name.data,
@@ -380,16 +395,16 @@ def create_venue_submission():
         )
 
       db.session.add(new_venue)
-
       db.session.commit()
 
       flash('Venue ' + request.form['name'] + ' was successfully listed!')
 
-  except:
+  except Exception as e:
 # TODO: on unsuccessful db insert, flash an error instead.
 # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
 # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
 
+    print(e)
     db.session.rollback()
 
     flash('Venue ' + request.form['name'] + ' could not be listed!')

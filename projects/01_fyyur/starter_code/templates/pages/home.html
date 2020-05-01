@@ -25,6 +25,8 @@
 	<div class="col-sm-6 hidden-sm hidden-xs">
 		<img id="front-splash" src="{{ url_for('static',filename='img/front-splash.jpg') }}" alt="Front Photo of Musical Band" />
 	</div>
+
+	{% if venue.id>0 %}
 	<div class="col-sm-6">
 		<p class="lead">Latest Venue</p>
 		<h1 class="monospace">
@@ -38,6 +40,10 @@
 		</div>
 
 	</div>
+
+	{% endif %}
+
+
 
 </div>
 {% endblock %}
