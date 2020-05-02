@@ -87,6 +87,47 @@ GET '/categories'
 '5' : "Entertainment",
 '6' : "Sports"}
 
+POST '/questions'
+- Add a question 
+- Request Arguments: Question, Answer, Difficulty, Catgeory
+- Returns: 
+{'success': true}
+
+curl -X POST -H "Content-Type: application/json" -d "{ "question": "When did World War 2 begin?", "answer": "1945", "difficulty": "1", "category": "3"}" http://localhost:5000/questions
+
+DELETE '/questions/<int:question_id>'
+- Delete a question based on the question id
+- Request Arguments: None
+- Returns:
+{'success': true}
+
+curl -X DELETE http://localhost:5000/questions/26
+
+POST '/questions/search'
+- Fetches a list of questions containing the search term
+- Request Arguments: search term
+- Returns: 
+{
+    'current_category': [4, 5],
+    'result': [{
+                'answer': 'Maya Angelou',
+                'category': 4, 
+                'difficulty': 2,
+                'id': 5,
+                'question': 'Whose autobiography is entitled 'I Know Why the Caged Bird Sings'?'
+            },
+            {
+                'answer': 'Edward Scissorhands',
+                'category': 5,
+                'difficulty': 3,
+                'id': 6,
+                'question': 'What was the title of the 1990 fantasy directed by Tim Burton about a young man with multi-bladed appendages?''
+            }],
+    'total_questions': 2
+}
+
+curl -X POST -H "Content-Type: application/json" -d "{ \"searchTerm\": \"title\"}" http://localhost:5000/questions/search
+
 ```
 
 

@@ -127,17 +127,22 @@ def create_app(test_config=None):
   This removal will persist in the database and when you refresh the page. 
   '''
 
-  @app.route('/questions', methods=['DELETE'])
-  def delete_question():
+  @app.route('/questions/<int:question_id>', methods=['DELETE'])
+  def delete_question(question_id):
 
     try:
 
+      question = Question.query.get(question_id)
+
+      question.delete()
+
+      return jsonify({
+        'success': True
+      })
 
     except:
 
       abort(422)
-
-
 
   '''
   @TODO: 
@@ -190,6 +195,38 @@ def create_app(test_config=None):
   only question that include that string within their question. 
   Try using the word "title" to start. 
   '''
+
+  @app.route('/questions/search', methods=['POST'])
+  def search_question():
+    try:
+
+      search_term = request.get_json()['searchTerm']
+
+      print(search_term)
+
+      results = Question.query.filter(Question.question.ilike('%{}%'.format(search_term))).all()
+
+      formatted_results = [question.format() for question in results]
+
+      if formatted_results == []:
+
+        return jsonify({
+            'questions': [],
+            'total_questions': 0,
+            'current_category': []
+          })
+
+      else:
+        return jsonify({
+            'questions': formatted_results,
+            'total_questions': len(formatted_results),
+            'current_category': [(question['category']) for question in formatted_results]
+          })
+
+    except:
+
+      abort(422)
+
 
   '''
   @TODO: 
