@@ -178,7 +178,7 @@ def create_app(test_config=None):
       new_question.insert()
 
       return jsonify({
-          'success': True
+          'success': True,
         })
 
     except:
@@ -244,7 +244,12 @@ def create_app(test_config=None):
 
         questions = Question.query.all()
 
+      elif Category.query.filter(Category.id == category_id).one_or_none() is None:
+
+        abort(404)
+
       else:
+
         questions = Question.query.filter(Question.category == category_id).all()
 
       formatted_questions = [question.format() for question in questions]
@@ -288,6 +293,10 @@ def create_app(test_config=None):
       if quiz_category == 0:
 
         all_category_questions = Question.query.all()
+
+      elif Category.query.filter(Category.id == quiz_category).one_or_none() is None:
+
+        abort(422)
 
       else:
 
