@@ -344,6 +344,6 @@ Gary Tse
 
 ## Acknowledgements
 
-Introduction and Getting Started adapted from Udacity's default READMEs.
+Introduction, Getting Started and API Reference adapted from Udacity's default READMEs.
 
 
