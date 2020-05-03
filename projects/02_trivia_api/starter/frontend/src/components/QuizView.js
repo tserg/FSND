@@ -25,7 +25,7 @@ class QuizView extends Component {
       url: `/categories`, //TODO: update request URL
       type: "GET",
       success: (result) => {
-        this.setState({ categories: result.categories })
+        this.setState({ categories: result })
         return;
       },
       error: (error) => {
@@ -35,7 +35,7 @@ class QuizView extends Component {
     })
   }
 
-  selectCategory = ({type, id=0}) => {
+  selectCategory = ({type=null, id=0}) => {
     this.setState({quizCategory: {type, id}}, this.getNextQuestion)
   }
 
@@ -68,6 +68,7 @@ class QuizView extends Component {
           guess: '',
           forceEnd: result.question ? false : true
         })
+        
         return;
       },
       error: (error) => {
@@ -75,6 +76,7 @@ class QuizView extends Component {
         return;
       }
     })
+
   }
 
   submitGuess = (event) => {
@@ -132,8 +134,17 @@ class QuizView extends Component {
 
   evaluateAnswer = () => {
     const formatGuess = this.state.guess.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").toLowerCase()
-    const answerArray = this.state.currentQuestion.answer.toLowerCase().split(' ');
-    return answerArray.includes(formatGuess)
+
+    // check for empty answer
+
+    if (formatGuess == '') {
+      return false
+    }
+    
+    // https://knowledge.udacity.com/questions/74595
+
+    const answer = this.state.currentQuestion.answer.toLowerCase();
+    return answer.includes(formatGuess)
   }
 
   renderCorrectAnswer(){
@@ -150,7 +161,10 @@ class QuizView extends Component {
   }
 
   renderPlay(){
-    return this.state.previousQuestions.length === questionsPerPlay || this.state.forceEnd
+
+    // "this.state.currentQuestion === null" checks if questions have ran out
+
+    return this.state.previousQuestions.length === questionsPerPlay || this.state.forceEnd || this.state.currentQuestion === null
       ? this.renderFinalScore()
       : this.state.showAnswer 
         ? this.renderCorrectAnswer()

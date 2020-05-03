@@ -128,6 +128,25 @@ POST '/questions/search'
 
 curl -X POST -H "Content-Type: application/json" -d "{ \"searchTerm\": \"title\"}" http://localhost:5000/questions/search
 
+POST '/quizzes'
+- Fetches a random question from the current category that has not been asked
+- Request Arguments: previous_questions, quiz_category
+- Returns:
+{
+    'previous_questions': [2, 4],
+    'current_question': {
+        'answer' 'George Washington Carver',
+        'category': 4,
+        'difficulty': 2,
+        'id': 12,
+        'question': 'Who inveted Peanut Butter?'
+    },
+    'quizCategory': '5',
+    'success': true
+}
+
+curl -X POST -H "Content-Type: application/json" -d "{ "previous_questions": ["2", "4"], "quiz_category": {"type": "Entertainment", "id": "5"} }" http://localhost:5000/quizzes
+
 ```
 
 

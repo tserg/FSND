@@ -202,8 +202,6 @@ def create_app(test_config=None):
 
       search_term = request.get_json()['searchTerm']
 
-      print(search_term)
-
       results = Question.query.filter(Question.question.ilike('%{}%'.format(search_term))).all()
 
       formatted_results = [question.format() for question in results]
@@ -242,7 +240,12 @@ def create_app(test_config=None):
 
     try:
 
-      questions = Question.query.filter(Question.category == category_id).all()
+      if category_id == 0:
+
+        questions = Question.query.all()
+
+      else:
+        questions = Question.query.filter(Question.category == category_id).all()
 
       formatted_questions = [question.format() for question in questions]
 
@@ -268,6 +271,65 @@ def create_app(test_config=None):
   one question at a time is displayed, the user is allowed to answer
   and shown whether they were correct or not. 
   '''
+
+  @app.route('/quizzes', methods=['POST'])
+  def play_quiz():
+
+    try:
+
+      content = request.get_json()
+
+      previous_questions = content['previous_questions']
+
+      previous_questions = [int(question_id) for question_id in previous_questions]
+
+      quiz_category = content['quiz_category']['id']
+
+      if quiz_category == 0:
+
+        all_category_questions = Question.query.all()
+
+      else:
+
+        all_category_questions = Question.query.filter(Question.category == quiz_category).all()
+
+      all_category_questions_formatted = [category_question.format() for category_question in all_category_questions]
+
+      unplayed_questions = []
+
+      for question in all_category_questions_formatted:
+
+        if question['id'] not in previous_questions:
+
+          unplayed_questions.append(question)
+
+      print(unplayed_questions)
+
+      if len(unplayed_questions) > 0:
+
+        random_choice = random.randint(0, len(unplayed_questions)-1)
+
+        return jsonify({
+            'success': True,
+            'question': unplayed_questions[random_choice],
+            'previous_questions': previous_questions,
+            'quizCategory': quiz_category
+
+          })
+
+      else: 
+
+        return jsonify({
+            'success': True,
+            'question': None,
+            'previous_questions': previous_questions,
+            'quizCategory': quiz_category
+          })
+
+    except:
+
+      abort(422)
+
 
   '''
   @TODO: 
