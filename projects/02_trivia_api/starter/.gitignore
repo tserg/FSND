@@ -11,3 +11,10 @@ venv
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# ignore node dependency directors
+frontend/node_modules/
+
+# ignore amendments made to psql file
+backend/trivia.psql
+
